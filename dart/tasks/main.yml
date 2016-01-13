@@ -1,0 +1,38 @@
+---
+# Install Dart
+- name: add key for dart repo
+  apt_key:
+    url=https://dl-ssl.google.com/linux/linux_signing_key.pub
+    state=present
+
+- name: add dart repo
+  apt_repository:
+    repo='deb [arch=amd64] https://storage.googleapis.com/download.dartlang.org/linux/debian stable main'
+    update_cache=yes
+    state=present
+
+- name: install dart
+  apt:
+    name=dart=1.13.0-1
+
+- name: create symlinks for dart tools
+  file:
+    name=/usr/bin/{{ item }}
+    src=/usr/lib/dart/bin/{{ item }}
+    state=link
+  with_items:
+    - dart2js
+    - dartanalyzer
+    - dartdoc
+    - dartfmt
+    - pub
+
+- name: install dart rpc tools
+  command: /usr/lib/dart/bin/pub global activate rpc
+  sudo: yes
+  sudo_user: "{{ user }}"
+
+- name: install discoveryapis_generator
+  command: /usr/lib/dart/bin/pub global activate discoveryapis_generator
+  sudo: yes
+  sudo_user: "{{ user }}"

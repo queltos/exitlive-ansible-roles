@@ -1,0 +1,63 @@
+#! /bin/bash
+
+###
+# This script is used by ansible to get the pub_cache directory used on the host.
+# Ansible then creates the same pub_cache directory path in the VM
+###
+
+package_dirs="/vagrant/api/packages /vagrant/webserver/packages"
+pub_cache_path=""
+
+find_link() {
+  packages_path="$1"
+
+  for link in `ls -1 ${packages_path}`
+  do
+    target=`readlink ${packages_path}/${link}`
+    if echo $target | grep -q '.pub-cache'
+    then
+      prefix=`echo $target | sed 's!\(.*\).pub-cache.*!\1!'`
+      pub_cache_path="${prefix}.pub-cache"
+      break
+    fi
+  done
+}
+
+for package_dir in $package_dirs
+do
+  if [ -d "$package_dir" ]
+  then
+    find_link "$package_dir"
+  fi
+
+  if [ -n "$pub_cache_path" ]
+  then
+    break
+  fi
+done
+
+exitlive_project_dirs="["
+first="true"
+for dir in $(ls -1 /vagrant)
+do
+  if [ ! $first = "true" ]
+  then
+    exitlive_project_dirs="${exitlive_project_dirs},"
+  fi
+  exitlive_project_dirs="${exitlive_project_dirs}\"${dir}\""
+  first="false"
+done
+
+exitlive_project_dirs="${exitlive_project_dirs}]"
+
+cat << EOF
+{
+    "changed": false,
+    "ansible_facts": {
+        "site_facts_gathered": true,
+        "pub_cache_path": "${pub_cache_path}",
+        "pub_cache_prefix": "${prefix}",
+	"exitlive_project_dirs": ${exitlive_project_dirs}
+    }
+}
+EOF

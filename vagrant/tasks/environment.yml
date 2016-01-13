@@ -1,0 +1,17 @@
+---
+  - name: add vagrant specific lines to environment
+    lineinfile:
+      dest=/etc/environment
+      line={{ item }}
+    with_items:
+      - SERVE_WEBSERVER_HOST='10.6.6.6'
+      - SERVE_WEBSERVER_PORT='7777'
+      - SERVE_DASHBOARD_HOST='10.6.6.6'
+      - SERVE_DASHBOARD_PORT='7779'
+      - WEBSERVER_PORT="8081"
+      - DASHBOARD_PORT="8082"
+      - API_PORT="8083"
+      - NO_GCLOUD=true
+      - DOCKER_HOST=unix:///var/run/docker.sock
+      - PROJECT_DIR=/vagrant
+      - RUN_DIR=/vagrant-run

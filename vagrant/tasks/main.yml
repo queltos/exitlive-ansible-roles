@@ -1,0 +1,87 @@
+---
+- name: gather site facts
+  action: site_facts
+
+- include: environment.yml
+
+- name: install inotify tools for watching gcloud logs
+  apt: name={{ item }}
+  with_items:
+    - inotify-tools
+    - sqlite3
+
+# set up pub_cache directory
+- name: check if pub_cache path was registered
+  fail: msg="pub_cache not found. Please run 'pub get' for this project and 'vagrant provision' afterwards."
+  when: pub_cache_prefix == ""
+  tags:
+    - packaging_ignore
+
+- name: create pub_cache parent directory
+  file:
+    path={{ pub_cache_prefix }}
+    state=directory
+    owner={{ user }}
+    group={{ user }}
+  tags:
+    - packaging_ignore
+
+- name: create pub_cache link
+  file:
+    src={{ user_home }}/.pub-cache
+    path={{ pub_cache_path }}
+    state=link
+    owner={{ user }}
+    group={{ user }}
+  tags:
+    - packaging_ignore
+
+- name: add PUB_CACHE to env
+  lineinfile:
+    dest=/etc/environment
+    line=PUB_CACHE={{ pub_cache_path }}
+  tags:
+    - packaging_ignore
+
+# bashrc customization
+- name: add cd /vagrant to .bashrc
+  lineinfile:
+    dest=/home/vagrant/.bashrc
+    line='cd /vagrant'
+
+# initial copy to run directory
+- name: copy /vagrant to run directory
+  command: rsync -rltog --chown=vagrant:vagrant /vagrant/ {{ run_dir }}
+    creates={{ run_dir }}
+  tags:
+    - packaging_ignore
+
+# install and run upstart scripts
+
+## dispatcher is being started by mount-private_packages
+## so does not need a notification
+- name: create upstart script for running gcloud
+  copy:
+    src=dispatcher.conf
+    dest=/etc/init/dispatcher.conf
+  tags:
+    - packaging_ignore
+
+- name: install mount-private_packages install script
+  copy:
+    src=mount-private_packages.conf
+    dest=/etc/init/mount-private_packages.conf
+  notify:
+    - start mount-private_packages
+  tags:
+    - packaging_ignore
+
+- name: install reloader upstart script
+  copy:
+    src=reloader.conf
+    dest=/etc/init/reloader.conf
+  notify: 
+    - start reloader
+  tags:
+    - packaging_ignore
+

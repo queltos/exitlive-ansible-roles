@@ -1,0 +1,10 @@
+---
+- name: start mount-private_packages
+  service:
+    name=mount-private_packages
+    state=started
+
+- name: start reloader
+  service:
+    name=reloader
+    state=started
